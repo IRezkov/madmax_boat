@@ -20,7 +20,7 @@ int currentServo;
 int currentOutServo;
 
 void setup() {
-  Serial.begin(9600);
+  //Serial.begin(9600);
   delay(1000);
   zeroPositionServo = pulseIn(servoInPin, HIGH);
   pinMode(thrustOutPin, OUTPUT);
@@ -30,14 +30,14 @@ void setup() {
 void loop() {
   configureThrust();
   configureServo();
-  //delay(5);
+  delay(15);
 }
 
 void configureThrust() {
   currentThrust = pulseIn(thrustInPin, HIGH);
   currentThrustVoltage = getThrustVoltage(currentThrust);
   analogWrite(thrustOutPin, currentThrustVoltage);
-  thrustLogger(currentThrust, currentThrustVoltage);
+  //thrustLogger(currentThrust, currentThrustVoltage);
 }
 
 int getOutSignalFromVoltage(float voltage, bool withoutProcceed) {
@@ -72,9 +72,8 @@ void thrustLogger(int currentThrust, int currentThrustVoltage) {
 
 void configureServo() {
   currentServo = pulseIn(servoInPin, HIGH);
-  servo1.writeMicroseconds(currentServo);
 
-/*
+
   if(currentServo == 0 || (currentServo <= zeroPositionServo + 40 && currentServo >= zeroPositionServo - 40)) {
     currentOutServo = 1500;
     servo1.writeMicroseconds(currentOutServo);
@@ -88,11 +87,11 @@ void configureServo() {
   if(currentServo >= zeroPositionServo + 40) {
     currentOutServo = currentServo + (2000 - maxServo) - 40;
     servo1.writeMicroseconds(currentOutServo);
-  }*/
+  }
 
-  Serial.print("Servo: Current In duration: ");
+  /*Serial.print("Servo: Current In duration: ");
   Serial.print(currentServo);
   Serial.print("; Current Out duration: ");
-  Serial.println(currentOutServo);
+  Serial.println(currentOutServo);*/
   currentOutServo = 0;
 }
