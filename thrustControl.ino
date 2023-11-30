@@ -30,7 +30,7 @@ void setup() {
 void loop() {
   configureThrust();
   configureServo();
-  delay(20);
+  //delay(5);
 }
 
 void configureThrust() {
@@ -72,7 +72,9 @@ void thrustLogger(int currentThrust, int currentThrustVoltage) {
 
 void configureServo() {
   currentServo = pulseIn(servoInPin, HIGH);
+  servo1.writeMicroseconds(currentServo);
 
+/*
   if(currentServo == 0 || (currentServo <= zeroPositionServo + 40 && currentServo >= zeroPositionServo - 40)) {
     currentOutServo = 1500;
     servo1.writeMicroseconds(currentOutServo);
@@ -86,7 +88,7 @@ void configureServo() {
   if(currentServo >= zeroPositionServo + 40) {
     currentOutServo = currentServo + (2000 - maxServo) - 40;
     servo1.writeMicroseconds(currentOutServo);
-  }
+  }*/
 
   Serial.print("Servo: Current In duration: ");
   Serial.print(currentServo);
