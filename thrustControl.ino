@@ -1,7 +1,7 @@
 #include <Servo.h>
 
 // Переменные для двигателя
-int thrustInPin = 6; // Пин входящего сигнала ШИМ
+int thrustInPin = 4; // Пин входящего сигнала ШИМ
 int thrustOutPin = 3; // Пин исходящего сигнала ШИМ
 int minThrust = 1500; // Минимальный ШИМ газа
 int maxThrust = 2000; // Максимальный ШИМ газа
@@ -14,40 +14,60 @@ int currentThrustVoltage; // Текущее напряжение газа
 // Переменные для сервопривода
 Servo servo1; // Объект сервопривода
 int servoControlPin = 8; // Пин сигнала, включающего управление сервоприводом
-int servoInPin = 2; // Пин входящего сигнала ШИМ
-int servoOutPin = 7; // Пин исходящего сигнала ШИМ
+int servoInPin = 5; // Пин входящего сигнала ШИМ
+int servoOutPin = 6; // Пин исходящего сигнала ШИМ
 int minServo = 1150; // Минимальный ШИМ сервопривода
 int zeroPositionServo; // ШИМ нулевого положения сервопривода
 int maxServo = 1930; // Максимальный ШИМ сервопривода
 int currentServo;  // Текущий входящий ШИМ сервопривода
 int currentOutServo; // Текущий исходящий ШИМ сервопривода
-float scaleServo = 1.1; // Коэффициент масштабирования входящего ШИМ
+float scaleServo = 1.2; // Коэффициент масштабирования входящего ШИМ
 
 // Общие установки
 bool activateLogs = false;
+int box_arm = 7;
+int change_control = 8;
 
 void setup() {
   // Проверка и запуск последовательного порта
   if(activateLogs)
     Serial.begin(9600);
   
-  delay(1000); // Ожидание загрузки приемника
+  delay(2000); // Ожидание загрузки приемника
   
   zeroPositionServo = pulseIn(servoInPin, HIGH);  // Запись нулевого положения ШИМ сервопривода
-  
+
   // Установка режима работы пинов
   pinMode(thrustOutPin, OUTPUT);
   pinMode(servoControlPin, INPUT);
+  pinMode(box_arm, INPUT);
+  pinMode(change_control, OUTPUT);
+
+  digitalWrite(change_control, HIGH); // Устанавливаем первоначально управление по внутреннему приемнику
+  
+  configure_reciever(); // Переключаем приемник по управляющему сигналу
+  
   servo1.attach(servoOutPin);
 }
 
 void loop() {
   configureThrust(); // Запуск обработки ШИМ двигателя
   
-  if(digitalRead(servoControlPin) == HIGH) // Проверка разрешения на управление сервоприводом
-    configureServo(); // Запуск обработки ШИМ сервопривода
   
-  delay(15); // Задержка
+  configureServo(); // Запуск обработки ШИМ сервопривода
+  
+  configure_reciever(); // Запуск проверки на переключение приемника
+
+  delay(100); // Задержка 0.1 секунду
+}
+
+// Функция управления переключением приемников
+void configure_reciever() {
+  if(pulseIn(box_arm, HIGH) > 1200) {
+    digitalWrite(change_control, LOW);
+  } else {
+    digitalWrite(change_control, HIGH);
+  }
 }
 
 // Функция управления двигателем
