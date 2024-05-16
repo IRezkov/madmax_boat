@@ -119,7 +119,7 @@ int getOutSignalFromVoltage(float voltage, bool withoutProcceed)
 // Функция обработки ШИМ двигателя
 int getThrustVoltage(int currentThrust)
 {
-  if (pulseIn(box_arm, HIGH) > 1200)
+  if (pulseIn(box_arm, HIGH) > 1200) // Проверка активации Ардупилота
   {
     minThrustCar = minThrustGraf;
   }
@@ -161,9 +161,16 @@ void configureServo()
     currentOutServo = 1500;                                                                                    // Установка нулевого положения ШИМ сервопривода
 
   if (currentServo <= zeroPositionServo - 40 || currentServo >= zeroPositionServo + 40) // Проверка на выход из мертвой зоны ШИМ сервопривода
-    // Расчет исходящего ШИМ сервопривода, масштабирование сигнала, ограничение угла в зависимости от оборотов двигателя
+    
+     if (pulseIn(box_arm, HIGH) > 1200) // Проверка активации Ардупилота
+  {
+    currentOutServo = currentServo;
+  }
+  else
+  { 
+    // Расчет исходящего ШИМ сервопривода, масштабирование сигнала, ограничение угла в зависимости от оборотов двигателя для локального управления
     currentOutServo = zeroPositionServo - (currentServo - zeroPositionServo) * scaleServo * (1 - max(0, 0.5 * ((currentThrust - minThrust * (1 + cruiseCoeff)) / (maxThrust - minThrust * (1 + cruiseCoeff)))));
-
+  }
   servo1.writeMicroseconds(currentOutServo); // Вывод обработанного ШИМ на сервопривод
 
   // Проверка и запуск логгера функции управления сервоприводом
