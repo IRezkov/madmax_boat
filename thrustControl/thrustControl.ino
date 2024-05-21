@@ -26,7 +26,7 @@ int currentOutServo = 1500; // Текущий исходящий ШИМ серв
 float scaleServo = 1.2; // Коэффициент масштабирования входящего ШИМ
 
 // Общие установки
-bool activateLogs = false;
+bool activateLogs = true;
 int box_arm = 7;
 int change_control = 8;
 bool control_ardu = false; // Режим управления газом и серво false - нижний приемник, true - верхний
@@ -49,7 +49,8 @@ void setup() {
   digitalWrite(change_control, HIGH); // Устанавливаем первоначально управление по внутреннему приемнику
   
   configure_reciever(); // Переключаем приемник по управляющему сигналу
-  
+
+  pinMode(LED_BUILTIN, OUTPUT);
   servo1.attach(servoOutPin);
 }
 
@@ -60,6 +61,8 @@ void loop() {
   configureServo(); // Запуск обработки ШИМ сервопривода
   
   configure_reciever(); // Запуск проверки на переключение приемника
+    
+  digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));   // turn the LED on (HIGH is the voltage level)
 
   delay(50); // Задержка 0.05 секунду
 }
