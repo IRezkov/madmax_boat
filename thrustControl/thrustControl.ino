@@ -1,106 +1,107 @@
 #include <Servo.h>
 
-// Переменные для двигателя дляч нового пульта ДУ
-int thrustInPin = 4;  // Пин входящего сигнала ШИМ
-int thrustOutPin = 3; // Пин исходящего сигнала ШИМ
-int minThrust = 1480; // Минимальный ШИМ газа
-int minThrustCar = minThrust;
-int minThrustGraf = 1000;        // Минимальный ШИМ газа
-int maxThrust = 2025;            // Максимальный ШИМ газа
-float cruiseCoeff = 0.15;         // Коэффициент ШИМ газа на круизе
-float minOutThrustVoltage = 0.9; // Напряжение холостого хода для вывода на двигатель
-float maxOutThrustVoltage = 4.95; // Максимальное напряжение для вывода на двигатель
-int currentThrust;               // Текуший входящий ШИМ газа
-int currentThrustVoltage;        // Текущее напряжение газа
-int diff;                        // Разница сигналов газа и поворота для танкового пульта
+// Переменные для двигателя
+uint8_t thrustInPin_A = 5;      // Пин входящего сигнала ШИМ - ARDUPILOT
+uint8_t thrustInPin_B = 6;      // Пин входящего сигнала ШИМ
+uint8_t thrustOutPin = 10;      // Пин исходящего сигнала ШИМ
+unsigned long minThrust = 1500; // Минимальный принимаемый ШИМ газа
+unsigned long minThrustCar = minThrust;// Минимальный принимаемый ШИМ газа
+unsigned long minThrustGraf = 1000; // Минимальный принимаемый ШИМ газа ARDUPILOT
+unsigned long maxThrust = 2000;     // Максимальный ШИМ газа
+float cruiseCoeff = 0.1;            // Коэффициент ШИМ газа на круизе
+float minOutThrustVoltage = 0.9;    // Напряжение холостого хода для вывода на двигатель
+float maxOutThrustVoltage = 4.8;    // Максимальное напряжение для вывода на двигатель
+int currentThrust;        // Текуший входящий ШИМ газа
+int currentThrustVoltage; // Текущее напряжение газа
+
 // Переменные для сервопривода
-Servo servo1;            // Объект сервопривода для нового пульта ДУ
-int servoControlPin = 8; // Пин сигнала, включающего управление сервоприводом
-int servoInPin = 5;      // Пин входящего сигнала ШИМ
-int servoOutPin = 6;     // Пин исходящего сигнала ШИМ
-int minServo = 900;     // Минимальный ШИМ сервопривода
-int zeroPositionServo;   // ШИМ нулевого положения сервопривода
-int maxServo = 1930;     // Максимальный ШИМ сервопривода
-int currentServo;        // Текущий входящий ШИМ сервопривода
-int currentOutServo;     // Текущий исходящий ШИМ сервопривода
-float scaleServo = 1.2;  // Коэффициент масштабирования входящего ШИМ
+Servo servo1; // Объект сервопривода
+// int servoControlPin = 8; // БОЛЬШЕ НЕ НУЖЕН Пин сигнала, включающего управление сервоприводом
+uint8_t servoInPin_A = 3; // Пин входящего сигнала ШИМ - ARDUPILOT
+uint8_t servoInPin_B = 4; // Пин входящего сигнала ШИМ
+uint8_t servoOutPin = 9; // Пин исходящего сигнала ШИМ
+int minServo = 1150;      // Минимальный ШИМ сервопривода
+int zeroPositionServo;    // ШИМ нулевого положения сервопривода
+int maxServo = 1930;      // Максимальный ШИМ сервопривода
+int currentServo;         // Текущий входящий ШИМ сервопривода
+int currentOutServo;      // Текущий исходящий ШИМ сервопривода
+float scaleServo = 1.2;   // Коэффициент масштабирования входящего ШИМ
 
 // Общие установки
-bool activateLogs = true;
-int box_arm = 7;
-int change_control = 8;
-bool control_ardu = false;
+unsigned long timer;
+unsigned long timerLog1;
+unsigned long timerLog2;
+#define timelog 100 //итерация лога в миллисекундах
+bool activateLogs = false;
+uint8_t box_arm = 2;
+// int change_control = 8; БОЛЬШЕ НЕ НУЖЕН
 
 void setup()
 {
   // Проверка и запуск последовательного порта
   if (activateLogs)
     Serial.begin(9600);
-
+  
   delay(2000); // Ожидание загрузки приемника
-
-  zeroPositionServo = pulseIn(servoInPin, HIGH); // Запись нулевого положения ШИМ сервопривода
-
+  pulseIn(servoInPin_A, HIGH);
+  zeroPositionServo = pulseIn(servoInPin_B, HIGH); // Запись нулевого положения ШИМ сервопривода
+  
+  currentServo = 1500;
   // Установка режима работы пинов
   pinMode(thrustOutPin, OUTPUT);
-  pinMode(servoControlPin, INPUT);
+  //pinMode(servoControlPin, INPUT);
   pinMode(box_arm, INPUT);
-  pinMode(change_control, OUTPUT);
+  //pinMode(change_control, OUTPUT);
 
-  digitalWrite(change_control, HIGH); // Устанавливаем первоначально управление по внутреннему приемнику
+  //digitalWrite(change_control, HIGH); // Устанавливаем первоначально управление по внутреннему приемнику
 
-  configure_reciever(); // Переключаем приемник по управляющему сигналу
-
+  //configure_reciever(); // Переключаем приемник по управляющему сигналу
+  timer = millis();
+  timerLog1 = millis();
+  timerLog2 = millis();
   servo1.attach(servoOutPin);
 }
 
 void loop()
 {
-
- configureThrust(); // Запуск обработки ШИМ двигателя
-
- configureServo(); // Запуск обработки ШИМ сервопривода
-
- configure_reciever(); // Запуск проверки на переключение приемника
-
-  delay(5); // Задержка 0.005 секунду
+  if (millis() - timer > 5)// повторить через 0.005 секунды
+  {
+    configureThrust();    // Запуск обработки ШИМ двигателя
+    configureServo();     // Запуск обработки ШИМ сервопривода
+    //configure_reciever(); // Запуск проверки на переключение приемника
+    timer = millis(); // обнуляю таймер ожидания
+  }
 }
 
 // Функция управления переключением приемников
+/*
 void configure_reciever()
 {
   if (pulseIn(box_arm, HIGH) > 1200)
   {
-    digitalWrite(change_control, LOW);
-    control_ardu = true;
+    // digitalWrite(change_control, LOW);
   }
   else
   {
-    digitalWrite(change_control, HIGH);
-    control_ardu = false;
-    currentThrust = pulseIn(thrustInPin, HIGH); 
-    currentServo = pulseIn(servoInPin, HIGH); // Получение ШИМ в микросекундах
-    diff = abs(currentThrust-currentServo);
+    // digitalWrite(change_control, HIGH);
   }
 }
+*/
 
 // Функция управления двигателем
 void configureThrust()
 {
-
-  currentThrust = pulseIn(thrustInPin, HIGH); // Получение шим в микросекундах
-
-  if (control_ardu)
+  if (pulseIn(box_arm, HIGH) > 1200)
   {
     minThrustCar = minThrustGraf;
+    currentThrust = pulseIn(thrustInPin_A, HIGH); // Получение шим в микросекундах
   }
   else
   {
     minThrustCar = minThrust;
-     // Получение ШИМ в микросекундах
-    if (diff > 15 || currentThrust <= 1400)                           // Проверка на отклонение стика газа назад или в бок для текущего пульта
+    currentThrust = pulseIn(thrustInPin_B, HIGH);       // Получение шим в микросекундах
+    if (currentThrust < 1000)                           // Проверка на отклонение стика газа назад
       currentThrust = minThrustCar * (1 + cruiseCoeff); // Установка ШИМ круиза
-    
   }
 
   currentThrustVoltage = getThrustVoltage(currentThrust); // Расчет напряжения круиза
@@ -128,18 +129,18 @@ int getOutSignalFromVoltage(float voltage, bool withoutProcceed)
 // Функция обработки ШИМ двигателя
 int getThrustVoltage(int currentThrust)
 {
-  if (control_ardu) // Проверка активации Ардупилота
+  if (pulseIn(box_arm, HIGH) > 1200) // Проверка активации Ардупилота
   {
     minThrustCar = minThrustGraf;
   }
   else
   {
     minThrustCar = minThrust;
-    //if (currentThrust < minThrustCar && currentThrust >= 1500)   // Проверка ШИМ на выход за минимальное значение
-    //  minThrustCar = currentThrust;                              // Корректировка минимального положения
-   if (currentThrust < minThrustCar + 40)                       // Проверка на холостой ход с мертвой зоной
-     return getOutSignalFromVoltage(minOutThrustVoltage, true); // Установка холостого хода
-    currentThrust = currentThrust-40;                          // Корректировка входящего ШИМ для избавления от мервой зоны
+    if (currentThrust < minThrustCar && currentThrust >= 1500)   // Проверка ШИМ на выход за минимальное значение
+      minThrustCar = currentThrust;                              // Корректировка минимального положения
+    if (currentThrust < minThrustCar + 80)                       // Проверка на холостой ход с мертвой зоной
+      return getOutSignalFromVoltage(minOutThrustVoltage, true); // Установка холостого хода
+    currentThrust = currentThrust - 80;                          // Корректировка входящего ШИМ для избавления от мервой зоны
   }
 
   if (currentThrust > maxThrust) // Проверка ШИМ на выход за максимальное значение
@@ -153,51 +154,46 @@ int getThrustVoltage(int currentThrust)
 // Функция логгер для функции управления двигателем
 void thrustLogger(int currentThrust, int currentThrustVoltage)
 {
-  Serial.print("Thrust: Current duration: ");
-  Serial.print(currentThrust);
-  Serial.print("; Out signal: ");
-  Serial.print(currentThrustVoltage);
-  Serial.print("; Out voltage: ");
-  Serial.println(((float)currentThrustVoltage / 255) * 5);
+  if (millis() - timerLog1 > timelog)// Итерация вывода в миллисекундах
+  {
+    Serial.print("Thrust: Current duration: ");
+    Serial.print(currentThrust);
+    Serial.print("; Out signal: ");
+    Serial.print(currentThrustVoltage);
+    Serial.print("; Out voltage: ");
+    Serial.println(((float)currentThrustVoltage / 255) * 5);
+    timerLog1 = millis();// обнулить таймер итерации
+  }
 }
 
 // Функция управления сервоприводом
 void configureServo()
 {
-  currentServo = pulseIn(servoInPin, HIGH); // Получение ШИМ в микросекундах
+  if (pulseIn(box_arm, HIGH) > 1200)            // Проверка активации Ардупилота
+  {                                             // тут работает Ардупилот
+    currentServo = pulseIn(servoInPin_A, HIGH); // Получение ШИМ в микросекундах
 
-  if (currentServo == 0 || (currentServo <= zeroPositionServo + 40 && currentServo >= zeroPositionServo - 40)) // Проверка на отсутствие сигнала ШИМ либо на мертвую зону
-    currentOutServo = zeroPositionServo;                                                                                    // Установка нулевого положения ШИМ сервопривода
-
-  if (currentServo <= zeroPositionServo - 40 || currentServo >= zeroPositionServo + 40) // Проверка на выход из мертвой зоны ШИМ сервопривода
-    
-     if (control_ardu) // Проверка активации Ардупилота
-  {
     currentOutServo = currentServo;
   }
   else
-  { 
-    // Расчет исходящего ШИМ сервопривода, масштабирование сигнала, ограничение угла в зависимости от оборотов двигателя для локального управления
-    //currentOutServo = zeroPositionServo - (currentServo - zeroPositionServo) * scaleServo * (1 - max(0, 0.5 * ((currentThrust - minThrust * (1 + cruiseCoeff)) / (maxThrust - minThrust * (1 + cruiseCoeff)))));
-    if (diff > 15)
+  {                                             // тут работает маленький пульт
+    currentServo = pulseIn(servoInPin_B, HIGH); // Получение ШИМ в микросекундах
+
+    if (currentServo == 0 || (currentServo <= zeroPositionServo + 40 && currentServo >= zeroPositionServo - 40)) // Проверка на отсутствие сигнала ШИМ либо на мертвую зону
+      currentOutServo = 1500;                                                                                    // Установка нулевого положения ШИМ сервопривода
+
+    if (currentServo <= zeroPositionServo - 40 || currentServo >= zeroPositionServo + 40) // Проверка на выход из мертвой зоны ШИМ сервопривода
     {
-      currentOutServo = pulseIn(thrustInPin, HIGH);
-    }
-    else
-    {
-      currentOutServo = zeroPositionServo;
+      // Расчет исходящего ШИМ сервопривода, масштабирование сигнала, ограничение угла в зависимости от оборотов двигателя для локального управления
+      currentOutServo = zeroPositionServo - (currentServo - zeroPositionServo) * scaleServo * (1 - max(0, 0.5 * ((currentThrust - minThrust * (1 + cruiseCoeff)) / (maxThrust - minThrust * (1 + cruiseCoeff)))));
     }
   }
 
-  if (currentOutServo<minServo)
-  {
-    currentOutServo = minServo;
-  }
-
-    if (currentOutServo>maxServo)
-  {
+  // обрезать концы что бы руль не упирался в случае передозы
+  if (currentOutServo > maxServo)
     currentOutServo = maxServo;
-  }
+  if (currentOutServo < minServo)
+    currentOutServo = minServo;
 
   servo1.writeMicroseconds(currentOutServo); // Вывод обработанного ШИМ на сервопривод
 
@@ -205,14 +201,18 @@ void configureServo()
   if (activateLogs)
     servoLogger();
 
-  currentOutServo = 0; // Обнуление переменной ШИМ для случая отказа приемника, на следующей итерации ШИМ встранет в нулевое положение - 1500 микросекунд
+  currentOutServo = 1500; // Обнуление переменной ШИМ для случая отказа приемника, на следующей итерации ШИМ встранет в нулевое положение - 1500 микросекунд
 }
 
 // Функция логгер для функции управления сервоприводом
 void servoLogger()
 {
-  Serial.print("Servo: Current In duration: ");
-  Serial.print(currentServo);
-  Serial.print("; Current Out duration: ");
-  Serial.println(currentOutServo);
+  if(millis() - timerLog2 > timelog)// Итерация вывода в миллисекундах
+  {
+    Serial.print("Servo: Current In duration: ");
+    Serial.print(currentServo);
+    Serial.print("; Current Out duration: ");
+    Serial.println(currentOutServo);
+    timerLog2 = millis();// обнулить таймер итерации
+  }
 }
