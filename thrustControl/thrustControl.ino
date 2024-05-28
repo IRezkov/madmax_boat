@@ -114,7 +114,10 @@ void configureThrust()
     currentThrustIN = pulseIn(thrustInPin_B, HIGH);       // Получение шим в микросекундах
     currentServoIN = pulseIn(servoInPin_B, HIGH); // Получение шим в микросекундах для танкового пульта
     diff = abs(currentThrustIN-currentServoIN); // для танкового пульта
-Serial.println(diff);
+
+    Serial.print(" ");
+    Serial.println(diff);
+    
     currentThrust = currentThrustIN;
     if (diff > 30 || currentThrust <= 1400)                           // Проверка на отклонение стика газа назад или в бок для танкового пульта
       currentThrust = minThrustCar * (1 + cruiseCoeff); // Установка ШИМ круиза
@@ -172,12 +175,11 @@ void thrustLogger(int currentThrust, int currentThrustVoltage)
 {
   if (millis() - timerLog1 > timelog)// Итерация вывода в миллисекундах
   {
-    Serial.print("Thrust: Current duration: ");
     Serial.print(currentThrust);
-    Serial.print("; Out signal: ");
+    Serial.print(" ");
     Serial.print(currentThrustVoltage);
-    Serial.print("; Out voltage: ");
-    Serial.println(((float)currentThrustVoltage / 255) * 5);
+    Serial.print(" ");
+    Serial.print(((float)currentThrustVoltage / 255) * 5);
     timerLog1 = millis();// обнулить таймер итерации
   }
 }
@@ -236,10 +238,10 @@ void servoLogger()
 {
   if(millis() - timerLog2 > timelog)// Итерация вывода в миллисекундах
   {
-    Serial.print("Servo: Current In duration: ");
+    Serial.print(" ");
     Serial.print(currentServo);
-    Serial.print("; Current Out duration: ");
-    Serial.println(currentOutServo);
+    Serial.print(" ");
+    Serial.print(currentOutServo);
     timerLog2 = millis();// обнулить таймер итерации
   }
 }
