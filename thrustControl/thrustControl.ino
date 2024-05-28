@@ -10,9 +10,10 @@ unsigned long minThrustGraf = 1000; // Минимальный принимаем
 unsigned long maxThrust = 2000;     // Максимальный ШИМ газа
 float cruiseCoeff = 0.1;            // Коэффициент ШИМ газа на круизе
 float minOutThrustVoltage = 0.9;    // Напряжение холостого хода для вывода на двигатель
-float maxOutThrustVoltage = 4.8;    // Максимальное напряжение для вывода на двигатель
+float maxOutThrustVoltage = 4.95;    // Максимальное напряжение для вывода на двигатель
 int currentThrust;        // Текуший входящий ШИМ газа
 int currentThrustVoltage; // Текущее напряжение газа
+int diff;                        // Разница сигналов газа и поворота для танкового пульта
 
 // Переменные для сервопривода
 Servo servo1; // Объект сервопривода
@@ -31,8 +32,8 @@ float scaleServo = 1.2;   // Коэффициент масштабировани
 unsigned long timer;
 unsigned long timerLog1;
 unsigned long timerLog2;
-#define timelog 100 //итерация лога в миллисекундах
-bool activateLogs = false;
+#define timelog 50 //итерация лога в миллисекундах
+bool activateLogs = true;
 uint8_t box_arm = 2;
 // int change_control = 8; БОЛЬШЕ НЕ НУЖЕН
 
@@ -100,7 +101,9 @@ void configureThrust()
   {
     minThrustCar = minThrust;
     currentThrust = pulseIn(thrustInPin_B, HIGH);       // Получение шим в микросекундах
-    if (currentThrust < 1000)                           // Проверка на отклонение стика газа назад
+    diff = abs(currentThrust-pulseIn(servoInPin_B, HIGH)); // для танкового пульта
+
+    if (diff > 15 || currentThrust <= 1400)                           // Проверка на отклонение стика газа назад или в бок для танкового пульта
       currentThrust = minThrustCar * (1 + cruiseCoeff); // Установка ШИМ круиза
   }
 
@@ -136,11 +139,11 @@ int getThrustVoltage(int currentThrust)
   else
   {
     minThrustCar = minThrust;
-    if (currentThrust < minThrustCar && currentThrust >= 1500)   // Проверка ШИМ на выход за минимальное значение
-      minThrustCar = currentThrust;                              // Корректировка минимального положения
-    if (currentThrust < minThrustCar + 80)                       // Проверка на холостой ход с мертвой зоной
+    //if (currentThrust < minThrustCar && currentThrust >= 1500)   // Проверка ШИМ на выход за минимальное значение
+    //  minThrustCar = currentThrust;                              // Корректировка минимального положения
+    if (currentThrust < minThrustCar + 40)                       // Проверка на холостой ход с мертвой зоной
       return getOutSignalFromVoltage(minOutThrustVoltage, true); // Установка холостого хода
-    currentThrust = currentThrust - 80;                          // Корректировка входящего ШИМ для избавления от мервой зоны
+    currentThrust = currentThrust - 40;                          // Корректировка входящего ШИМ для избавления от мервой зоны
   }
 
   if (currentThrust > maxThrust) // Проверка ШИМ на выход за максимальное значение
@@ -179,13 +182,23 @@ void configureServo()
   {                                             // тут работает маленький пульт
     currentServo = pulseIn(servoInPin_B, HIGH); // Получение ШИМ в микросекундах
 
-    if (currentServo == 0 || (currentServo <= zeroPositionServo + 40 && currentServo >= zeroPositionServo - 40)) // Проверка на отсутствие сигнала ШИМ либо на мертвую зону
-      currentOutServo = 1500;                                                                                    // Установка нулевого положения ШИМ сервопривода
+    //if (currentServo == 0 || (currentServo <= zeroPositionServo + 40 && currentServo >= zeroPositionServo - 40)) // Проверка на отсутствие сигнала ШИМ либо на мертвую зону
+    //  currentOutServo = 1500;                                                                                    // Установка нулевого положения ШИМ сервопривода
 
-    if (currentServo <= zeroPositionServo - 40 || currentServo >= zeroPositionServo + 40) // Проверка на выход из мертвой зоны ШИМ сервопривода
-    {
+    //if (currentServo <= zeroPositionServo - 40 || currentServo >= zeroPositionServo + 40) // Проверка на выход из мертвой зоны ШИМ сервопривода
+    //{
       // Расчет исходящего ШИМ сервопривода, масштабирование сигнала, ограничение угла в зависимости от оборотов двигателя для локального управления
-      currentOutServo = zeroPositionServo - (currentServo - zeroPositionServo) * scaleServo * (1 - max(0, 0.5 * ((currentThrust - minThrust * (1 + cruiseCoeff)) / (maxThrust - minThrust * (1 + cruiseCoeff)))));
+    //  currentOutServo = zeroPositionServo - (currentServo - zeroPositionServo) * scaleServo * (1 - max(0, 0.5 * ((currentThrust - minThrust * (1 + cruiseCoeff)) / (maxThrust - minThrust * (1 + cruiseCoeff)))));
+    //}
+    // для танкового пульта:
+    diff = abs(currentServo - pulseIn(thrustInPin_B, HIGH)); 
+    if (diff > 15)
+    {
+      currentOutServo = pulseIn(thrustInPin_B, HIGH);
+    }
+    else
+    {
+      currentOutServo = zeroPositionServo;
     }
   }
 
