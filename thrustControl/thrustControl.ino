@@ -41,7 +41,7 @@ void setup()
 {
 	// Проверка и запуск последовательного порта
 	if (activateLogs)
-		Serial.begin(9600);
+		Serial.begin(115200);
 	
 	delay(2000); // Ожидание загрузки приемника
 	pulseIn(servoInPin_A, HIGH);
