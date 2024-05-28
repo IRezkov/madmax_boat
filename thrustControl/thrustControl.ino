@@ -61,6 +61,8 @@ void setup()
   timerLog1 = millis();
   timerLog2 = millis();
   servo1.attach(servoOutPin);
+
+  pinMode(LED_BUILTIN, OUTPUT);
 }
 
 void loop()
@@ -72,6 +74,8 @@ void loop()
     //configure_reciever(); // Запуск проверки на переключение приемника
     timer = millis(); // обнуляю таймер ожидания
   }
+  
+	digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));   // turn the LED on (HIGH is the voltage level)
 }
 
 // Функция управления переключением приемников
