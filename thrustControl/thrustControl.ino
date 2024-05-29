@@ -3,7 +3,7 @@
 // Переменные для двигателя
 uint8_t thrustInPin_A = 5;      // Пин входящего сигнала ШИМ - ARDUPILOT
 uint8_t thrustInPin_B = 6;      // Пин входящего сигнала ШИМ
-uint8_t thrustOutPin = 11;      // Пин исходящего сигнала ШИМ
+uint8_t thrustOutPin = 10;      // Пин исходящего сигнала ШИМ 490 Гц на VOTOL
 int minThrust = 1500; // Минимальный принимаемый ШИМ газа
 int minThrustCar = minThrust;// Минимальный принимаемый ШИМ газа
 int minThrustGraf = 1000; // Минимальный принимаемый ШИМ газа ARDUPILOT
@@ -18,7 +18,6 @@ int diff;                        // Разница сигналов газа и 
 
 // Переменные для сервопривода
 Servo servo1; // Объект сервопривода
-// int servoControlPin = 8; // БОЛЬШЕ НЕ НУЖЕН Пин сигнала, включающего управление сервоприводом
 uint8_t servoInPin_A = 3; // Пин входящего сигнала ШИМ - ARDUPILOT
 uint8_t servoInPin_B = 4; // Пин входящего сигнала ШИМ
 uint8_t servoOutPin = 9; // Пин исходящего сигнала ШИМ
@@ -30,7 +29,7 @@ int  currentServo;         // Текущий входящий ШИМ серво�
 int currentOutServo;      // Текущий исходящий ШИМ сервопривода
 float scaleServo = 1.2;   // Коэффициент масштабирования входящего ШИМ
 
-unsigned long swich = 1100;
+unsigned long arm_value = 1100;
 
 // Общие установки
 unsigned long timer;
@@ -39,7 +38,7 @@ unsigned long timerLog2;
 unsigned long timelog = 50; //итерация лога в миллисекундах
 bool activateLogs = true;
 uint8_t box_arm = 2;
-// int change_control = 8; БОЛЬШЕ НЕ НУЖЕН
+
 
 void setup()
 {
@@ -75,7 +74,7 @@ void loop()
 {
   if (millis() - timer > 5)// повторить через 0.005 секунды
   {
-    swich = pulseIn(box_arm, HIGH, 20000);
+    arm_value = pulseIn(box_arm, HIGH, 20000);
    // analogWrite(thrustOutPin, 200);
     configureThrust();    // Запуск обработки ШИМ двигателя
     configureServo();     // Запуск обработки ШИМ сервопривода
@@ -103,7 +102,7 @@ void configure_reciever()
 // Функция управления двигателем
 void configureThrust()
 {
-  if (swich > 1200)
+  if (arm_value > 1200)
   {
     minThrustCar = minThrustGraf;
     currentThrust = pulseIn(thrustInPin_A, HIGH); // Получение шим в микросекундах
@@ -150,7 +149,7 @@ int getOutSignalFromVoltage(float voltage, bool withoutProcceed)
 int getThrustVoltage(int currentThrust)
 {
  // if (pulseIn(box_arm, HIGH) > 1200) // Проверка активации Ардупилота
-  if (swich > 1200)            // Проверка активации Ардупилота
+  if (arm_value > 1200)            // Проверка активации Ардупилота
   {
     minThrustCar = minThrustGraf;
   }
@@ -188,7 +187,7 @@ void thrustLogger(int currentThrust, int currentThrustVoltage)
 void configureServo()
 {
   //if (pulseIn(box_arm, HIGH) > 1200)            // Проверка активации Ардупилота
-  if (swich > 1200)            // Проверка активации Ардупилота
+  if (arm_value > 1200)            // Проверка активации Ардупилота
   {                                             // тут работает Ардупилот
     currentServo = pulseIn(servoInPin_A, HIGH); // Получение ШИМ в микросекундах
     currentOutServo = currentServo;
