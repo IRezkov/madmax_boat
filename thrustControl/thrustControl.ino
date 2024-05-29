@@ -45,7 +45,7 @@ void setup()
 {
   // Проверка и запуск последовательного порта
   if (activateLogs)
-    Serial.begin(115200);
+    Serial.begin(9600);
   
   delay(2000); // Ожидание загрузки приемника
   
